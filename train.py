@@ -44,9 +44,23 @@ class Model(nn.Module):
         x = self.fc1(x)
         return x
 
+
+#own loss
+import torch.nn.functional as F
+
+class NaszaFunkcjaStraty(torch.nn.Module):
+    def __init__(self):
+        super(NaszaFunkcjaStraty, self).__init__()
+
+    def forward(self, output, reprezentacje):
+        batch_size = output.size(0)
+        mse = F.mse_loss(output, reprezentacje)
+        return mse / batch_size
+    
+
 # Inicjalizacja modelu, funkcji straty i optymalizatora
 model = Model()
-criterion = nn.MSELoss()
+criterion = NaszaFunkcjaStraty()#nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
