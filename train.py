@@ -49,8 +49,6 @@ model = Model()
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Dzielenie danych na zbiór treningowy i walidacyjny (możesz również użyć DataLoader z argumentem shuffle=True)
-#rozmiar_treningu = int(len(dane['obrazki']) * 0.8)
 
 
 x = 5 #co ile bedzie nasz przyklad walidacyjny x=5 to znaczy 1/5 to przyklady walidacyjne
@@ -68,7 +66,6 @@ for i in range(len(dane)):
 
 # Definicja transformacji danych treningowych (augmentacja)
 transformacje_treningowe = transforms.Compose([
-    transforms.RandomHorizontalFlip(),
     transforms.RandomVerticalFlip(),
     transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
     transforms.RandomRotation(10),
