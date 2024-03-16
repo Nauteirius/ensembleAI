@@ -10,7 +10,7 @@ class ModelApi:
         self.model, self.preprocess = self.setup_model()
         
         self.app.add_url_rule('/', 'index', self.index)
-        self.app.add_url_rule('/', 'modelstealing', self.modelstealing)
+        self.app.add_url_rule('/modelstealing', 'modelstealing', self.modelstealing)
 
     def setup_model(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -33,13 +33,16 @@ class ModelApi:
             _type_: encoded image
         """
         img_file = request.files["file"]
-        img = Image.open(img_file).to(self.device)
+        img = self.preprocess(Image.open(img_file)).unsqueeze(0).to(self.device)
         
         with torch.no_grad():
-            image_features = model.encode_image(img)
+            image_features = self.model.encode_image(img)
 
-        return jsonify({'representation': image_features})
+        image_features_list = image_features.tolist()
+
+        return jsonify({'representation': image_features_list})
 
 
 if __name__ == '__main__':
     model = ModelApi()
+    model.app.run()

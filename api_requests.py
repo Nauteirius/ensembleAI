@@ -2,7 +2,7 @@ import json
 import requests
 
 TIMEOUT=10000
-SERVER_URL = "http://127.0.0.1:5000/"
+SERVER_URL = "http://127.0.0.1:5000"
 TEAM_TOKEN = "[paste your team token here]"
 
 def model_stealing(path_to_png_file: str):
