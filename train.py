@@ -12,15 +12,20 @@ with open('data.pickle', 'rb') as f:
 
 class MojeDane(Dataset):
     def __init__(self, dane, transform=None):
-        self.obrazki = torch.tensor(dane['obrazki'], dtype=torch.float32)
+        
+        self.imgid = torch.tensor(dane['obrazki'], dtype=torch.float32) #to sa id obrazka
+        self.dataset = torch.load("modelstealing/data/ExampleModelStealingPub.pt")
+        self.obrazki=self.dataset.img[self.imgid]
+
+
         self.reprezentacje = torch.tensor(dane['reprezentacje'], dtype=torch.float32)
         self.transform = transform
 
     def __len__(self):
-        return len(self.obrazki)
+        return len(self.imgid)
 
     def __getitem__(self, idx):
-        obrazek = self.obrazki[idx]
+        obrazek = self.imgid[idx]
         reprezentacja = self.reprezentacje[idx]
 
         if self.transform:
@@ -35,14 +40,19 @@ class MojeDane(Dataset):
 
 #class 
 # Definicja modelu
-class Model(nn.Module):
-    def __init__(self):
-        super(Model, self).__init__()
-        self.fc1 = nn.Linear(rozmiar_wej, rozmiar_wyj)
+    
+import api
+# class Model(nn.Module):
+#     model = api.ModelApi.setup_model()
 
-    def forward(self, x):
-        x = self.fc1(x)
-        return x
+# class Model(nn.Module):
+#     def __init__(self):
+#         super(Model, self).__init__()
+#         self.fc1 = nn.Linear(rozmiar_wej, rozmiar_wyj)
+
+#     def forward(self, x):
+#         x = self.fc1(x)
+#         return x
 
 
 #own loss
@@ -59,7 +69,8 @@ class NaszaFunkcjaStraty(torch.nn.Module):
     
 
 # Inicjalizacja modelu, funkcji straty i optymalizatora
-model = Model()
+#model = Model()
+model = api.ModelApi.setup_model()
 criterion = NaszaFunkcjaStraty()#nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
