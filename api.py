@@ -1,31 +1,45 @@
 from flask import Flask, Response, request, jsonify
+import torch
+import clip
 from PIL import Image
 
-app = Flask(__name__)
+class ModelApi:    
 
-@app.route('/')
-def index():
-    return jsonify({'OK'})
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.model, self.preprocess = self.setup_model()
+        
+        self.app.add_url_rule('/', 'index', self.index)
+        self.app.add_url_rule('/', 'modelstealing', self.modelstealing)
 
-@app.route('/modelstealing')
-def model():
-    """_summary_
+    def setup_model(self):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        model, preprocess = clip.load("ViT-B/32", device=self.device)
+        return model, preprocess
 
-    Request:
-        method=GET
-        files={"file": image}
-        headers={"token": TEAM_TOKEN}
+    def index(self):
+        is_initialized = (self.model is not None)
+        return jsonify({'model_initialized': is_initialized, "device": self.device})
 
-    Response:
-        _type_: encoded image
-    """
-    img_file = request.files["file"]
-    img = Image.open(img_file)
-    
-    # model(img)
+    def modelstealing(self):
+        """_summary_
 
-    return jsonify({'representation': 'OK'})
+        Request:
+            method=GET
+            files={"file": image}
+            headers={"token": TEAM_TOKEN}
+
+        Response:
+            _type_: encoded image
+        """
+        img_file = request.files["file"]
+        img = Image.open(img_file).to(self.device)
+        
+        with torch.no_grad():
+            image_features = model.encode_image(img)
+
+        return jsonify({'representation': image_features})
 
 
 if __name__ == '__main__':
-    app.run()
+    model = ModelApi()
