@@ -60,28 +60,30 @@ if __name__ == "__main__":
 
     ids = dataset.ids[:IDS_NUM]
     Xs = [pil_to_tensor(img.convert("RGB")).type(torch.float) for img in dataset.imgs[:IDS_NUM]]
-    ys = np.random.randn(IDS_NUM, 192)
-    # ys = prepare_data(ids)
+    ys = torch.normal(0, 1, size=(IDS_NUM, OUTPUT_DIM), dtype=torch.float)
+    ys = prepare_data(ids)
 
-    loader = torch.utils.data.DataLoader((Xs, ys), batch_size=64, shuffle=True)
+    loader = torch.utils.data.DataLoader(list(zip(Xs, ys)), batch_size=64, shuffle=True)
 
     model = torch.nn.Sequential(
         torch.nn.Conv2d(3, 10, 3),
-        torch.nn.BatchNorm2d(16),
+        # torch.nn.BatchNorm2d(16),
         torch.nn.Conv2d(10, 1, 3),
-        torch.nn.BatchNorm2d(16),
+        # torch.nn.BatchNorm2d(16),
         torch.nn.Flatten(),
-        torch.nn.MaxPool2d(kernel_size=2, stride=2),
         torch.nn.ReLU(),
-        torch.nn.Linear(512, 192)
+        torch.nn.Linear(784, OUTPUT_DIM)
     )
 
     opt = torch.optim.Adam(model.parameters())
     loss_fn = torch.nn.MSELoss()
 
-    for x, y in zip(Xs, ys):
+    # for x, y in zip(Xs, ys):
+    for x, y in loader:
         opt.zero_grad()
         outputs = model(x)
+        print(outputs.shape)
+        print(y.shape)
         loss = loss_fn(outputs, y)
         loss.backward()
         opt.step()
@@ -92,3 +94,4 @@ if __name__ == "__main__":
         ids=np.random.permutation(20000),
         representations=np.random.randn(20000, 192),
     )
+    
