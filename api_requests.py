@@ -1,9 +1,10 @@
+import os
 import json
 import requests
 
 TIMEOUT=10000
-SERVER_URL = "http://127.0.0.1:5000"
-TEAM_TOKEN = "[paste your team token here]"
+SERVER_URL = os.environ.get("SERVER_URL", "http://127.0.0.1:5000/")
+TEAM_TOKEN = os.environ.get("TEAM_TOKEN", "[TOKEN]")
 
 def model_stealing(path_to_png_file: str):
     ENDPOINT = "/modelstealing"
