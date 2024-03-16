@@ -31,15 +31,20 @@ class TaskDataset(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = torch.load("data/ModelStealingPub.pt")
+    dataset = torch.load("data/contestants/ModelStealingPub.pt")
     print(dataset.ids, dataset.imgs, dataset.labels)
 
     generated = {}
+    generated['obrazki']=[]
+    generated['reprezentacje']=[]
+    generated['id']=[]
+
     for idx, (img_idx, img) in enumerate(zip(dataset.ids, dataset.imgs)):
 
         #-------------------------------------------------------------------------------------------------
 
-
+        if (idx % 100 == 0):
+            print(f'{idx} / {len(dataset.ids)}')
 
 
         # Load your image
@@ -52,7 +57,7 @@ if __name__ == '__main__':
 
         
         # Save the image in the folder
-        image_name = img_idx + ".png"  # Specify the name for the saved image
+        image_name = str(img_idx) + ".png"  # Specify the name for the saved image
         image_path = os.path.join(folder_path, image_name)
         img.save(image_path)
 
@@ -75,5 +80,5 @@ if __name__ == '__main__':
         generated['reprezentacje'].append(encoding)
         generated['id'].append(idx)
 
-    with open('generated_data') as f:
+    with open('generated_data', 'wb') as f:
         pickle.dump(generated, f)
