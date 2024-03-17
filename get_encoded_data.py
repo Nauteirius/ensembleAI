@@ -35,46 +35,25 @@ if __name__ == '__main__':
     print(dataset.ids, dataset.imgs, dataset.labels)
 
     generated = {}
-    generated['idx']=[]             # indexes of querries
-    generated['img_idx']=[]         # indexes from the dataset
-    generated['representations']=[] # vectors from the querries
+    generated['idx']=[]
+    generated['img_idx']=[]
+    generated['representations']=[]
 
+    # Create a folder to save the image if it doesn't exist
+    folder_path = "images"
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    
     for idx, (img_idx, img) in enumerate(zip(dataset.ids, dataset.imgs)):
-
-        #-------------------------------------------------------------------------------------------------
-
         if (idx % 100 == 0):
             print(f'{idx} / {len(dataset.ids)}')
 
-
-        # Load your image
-        #image = Image.open(img)  # Replace "example.jpg" with the path to your image
-
-        # Create a folder to save the image if it doesn't exist
-        folder_path = "images"
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        
         # Save the image in the folder
-        image_name = str(img_idx) + ".png"  # Specify the name for the saved image
+        image_name = str(img_idx) + ".png"
         image_path = os.path.join(folder_path, image_name)
         img.save(image_path)
 
-        # Now, you have the path to the saved image
-        #print("Image saved to:", image_path)
-
-
-
-
-
-
-
-        #------------------------------------------------------------------------------------------------
-
-
         encoding = model_stealing(image_path)
-        #generated.append((idx, img_idx, encoding))
         
         generated['idx'].append(idx)
         generated['img_idx'].append(img_idx)
