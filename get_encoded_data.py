@@ -8,6 +8,9 @@ from typing import Tuple
 
 from PIL import Image
 import os
+import numpy as np
+
+NUM_OF_SING_QUE=10
 
 class TaskDataset(Dataset):
     def __init__(self, transform=None):
@@ -53,11 +56,17 @@ if __name__ == '__main__':
         image_path = os.path.join(folder_path, image_name)
         img.save(image_path)
 
-        encoding = model_stealing(image_path)
-        
+        vectors = []
+        for _ in range(NUM_OF_SING_QUE):
+            vector = model_stealing(image_path)
+            vectors.append(vector)
+
+        vectors_array = np.array(vectors)
+        mean_vector = np.mean(vectors_array, axis=0)
+            
         generated['idx'].append(idx)
         generated['img_idx'].append(img_idx)
-        generated['representations'].append(encoding)
+        generated['representations'].append(mean_vector.tolist())
 
     with open('generated_data', 'wb') as f:
         pickle.dump(generated, f)
