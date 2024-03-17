@@ -10,47 +10,38 @@ import pickle
 
 
 SERVER_URL = "http://34.71.138.79:9090"
-TEAM_TOKEN = "[TOKEN]"
-TIMEOUT=10000
-IDS_NUM = 2000
+TEAM_TOKEN = "zZ9HuhBABqiNLD7i"
+TIMEOUT=1000000
+# IDS_NUM = 2
+IDS_OFFSET = 0
+IDS_NUM = 1000
+SOLUTION_IDS_NUM = 20000
 
-def sybil_attack(ids: List[int], home_or_defense: str, binary_or_affine: str):
-    if home_or_defense not in ["home", "defense"] or binary_or_affine not in ["binary", "affine"]:
+
+def sybil(ids: List[int], home_or_defense: str, binary_or_affine: str):
+    if home_or_defense not in ["home", "defense"] or binary_or_affine not in [
+        "binary",
+        "affine",
+    ]:
         raise Exception("Invalid endpoint")
-    
-    ENDPOINT = f"/sybil/{binary_or_affine}/{home_or_defense}"
-    URL = SERVER_URL + ENDPOINT
 
-    ids = ids = ",".join(map(str, ids))
-
-    response = requests.get(
-        URL, params={"ids": ids}, headers={"token": TEAM_TOKEN}, timeout=TIMEOUT
-    )
-
+    endpoint = f"/sybil/{binary_or_affine}/{home_or_defense}"
+    url = SERVER_URL + endpoint
+    ids = ",".join(map(str, ids))
+    response = requests.get(url, params={"ids": ids}, headers={"token": TEAM_TOKEN})
     if response.status_code == 200:
-        return json.loads(response.content.decode())["representations"]
+        representations = response.json()["representations"]
+        ids = response.json()["ids"]
+        return representations
     else:
-        raise Exception(f"Request failed. Status code: {response.status_code}, content: {response.content}")
-
-
-def sybil_attack_reset():
-    ENDPOINT = "/sybil/reset"
-    URL = SERVER_URL + ENDPOINT
-
-    response = requests.post(
-        URL, headers={"token": TEAM_TOKEN}, timeout=TIMEOUT
-    )
-
-    if response.status_code == 200:
-        print("Endpoint rested successfully")
-    else:
-        raise Exception(f"Request failed. Status code: {response.status_code}, content: {response.content}")
-
+        raise Exception(
+            f"Sybil failed. Code: {response.status_code}, content: {response.json()}"
+        )
 
 
 # Be careful. This can be done only 4 times an hour.
 # Make sure your file has proper content.
-def sybil_submit(path_to_npz_file: str, binary_or_affine: str):
+def sybil_submit(binary_or_affine: str, path_to_npz_file: str):
     if binary_or_affine not in ["binary", "affine"]:
         raise Exception("Invalid endpoint")
 
@@ -58,7 +49,7 @@ def sybil_submit(path_to_npz_file: str, binary_or_affine: str):
     url = SERVER_URL + endpoint
 
     with open(path_to_npz_file, "rb") as f:
-        response = requests.post(url, files={"file": f}, headers={"token": TEAM_TOKEN}, timeout=TIMEOUT)
+        response = requests.post(url, files={"file": f}, headers={"token": TEAM_TOKEN})
 
     if response.status_code == 200:
         print("OK")
@@ -69,34 +60,66 @@ def sybil_submit(path_to_npz_file: str, binary_or_affine: str):
         )
 
 
+def sybil_reset(binary_or_affine: str, home_or_defense: str):
+    if binary_or_affine not in ["binary", "affine"]:
+        raise Exception("Invalid endpoint")
+    
+    if home_or_defense not in ["home", "defense"]:
+        raise Exception("Invalid endpoint")
+
+    endpoint = f"/sybil/{binary_or_affine}/reset/{home_or_defense}"
+    url = SERVER_URL + endpoint
+    response = requests.post(url, headers={"token": TEAM_TOKEN})
+    if response.status_code == 200:
+        print("Request ok")
+        print(response.json())
+    else:
+        raise Exception(
+            f"Sybil reset failed. Code: {response.status_code}, content: {response.json()}"
+        )
+
+
 def prepare_data(ids):
     # ids = [i for i in range(IDS_NUM)]
-    representations = sybil_attack(ids, "home", BINARY_OR_AFFINE)
+    representations = sybil(ids, "home", BINARY_OR_AFFINE)
     return representations
+
+# def reverse_affine(points):
+
 
 BINARY_OR_AFFINE = "affine"
 INPUT_DIM = (3, 32, 32)
-OUTPUT_DIM = 192
+OUTPUT_DIM = 384
 
 if __name__ == "__main__":
-    
+
     reset = False
     if reset:
-        sybil_attack_reset()
-    
-    
+        sybil_reset(BINARY_OR_AFFINE, "home")
+        exit(0)
+
     with open('data/contestants/SybilAttack.pt', 'rb') as f:
         dataset = torch.load(f)
-
-    ids = dataset.ids[:IDS_NUM]
-    Xs = [pil_to_tensor(img.convert("RGB")).type(torch.float) for img in dataset.imgs[:IDS_NUM]]
-    # ys = torch.normal(0, 1, size=(IDS_NUM, OUTPUT_DIM), dtype=torch.float)
+    ids = dataset.ids[IDS_OFFSET:IDS_NUM + IDS_OFFSET]
     
-    print("requesting representations")
-    ys = prepare_data(ids)
-    # print(ys)
-    # with open("ys.pickle", 'wb') as f:
-    #     pickle.dump(ys, f)
+    download_data = False
+    if download_data:
+        print("requesting representations")
+        ys = prepare_data(ids)
+        with open('ys_data.pickle', 'wb') as f:
+            pickle.dump(ys, f)
+        print(ys)
+        print(type(ys))
+        exit(0)
+    else:
+        with open('ys_data.pickle', 'rb') as f:
+            ys = pickle.load(f)
+    ys = [torch.tensor(y) for y in ys]
+    # print([y.shape for y in ys])
+    print(len(ys))
+
+    Xs = [pil_to_tensor(img.convert("RGB")).type(torch.float) for img in dataset.imgs[IDS_OFFSET:IDS_NUM + IDS_OFFSET]]
+    # ys = torch.normal(0, 1, size=(IDS_NUM, OUTPUT_DIM), dtype=torch.float)
 
     loader = torch.utils.data.DataLoader(list(zip(Xs, ys)), batch_size=64, shuffle=True)
 
@@ -125,11 +148,20 @@ if __name__ == "__main__":
         loss.backward()
         opt.step()
         
-    SOLUTION_FILE = "example_submission.npz"
+    # TODO if affine then
+    # linalg.solve(B)
+        
+    # generate output
+    SOLUTION_FILE = "submission.npz"
+    
+    ids = dataset.ids[:SOLUTION_IDS_NUM]
+    Xs = [pil_to_tensor(img.convert("RGB")).type(torch.float) for img in dataset.imgs[:SOLUTION_IDS_NUM]]
+    outputs = [model(x).detach().numpy() for x in Xs]
+        
     np.savez(
         SOLUTION_FILE,
-        ids=np.random.permutation(20000),
-        representations=np.random.randn(20000, 192),
+        ids=np.array(ids),
+        representations=np.array(outputs).squeeze(1)
     )
     print("subbmit solution")
-    sybil_submit(SOLUTION_FILE, BINARY_OR_AFFINE)
+    sybil_submit(BINARY_OR_AFFINE, SOLUTION_FILE)
