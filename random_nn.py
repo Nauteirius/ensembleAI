@@ -1,12 +1,17 @@
 import requests
 import torch
+import json
 
 OUT_DIM = 512
-SERVER_URL = "http://34.71.138.79:9090"
-TEAM_TOKEN = "zZ9HuhBABqiNLD7i"
+# SERVER_URL = "http://34.71.138.79:9090"
+# TEAM_TOKEN = "zZ9HuhBABqiNLD7i"
 OUTPUT_FILE = 'model.onnx'
 
 def model_stealing_submission(path_to_onnx_file: str):
+    
+    SERVER_URL = "http://34.71.138.79:9090"
+    TEAM_TOKEN = "zZ9HuhBABqiNLD7i"
+
     ENDPOINT = "/modelstealing/submit"
     URL = SERVER_URL + ENDPOINT
 
@@ -16,7 +21,7 @@ def model_stealing_submission(path_to_onnx_file: str):
         )
 
         if response.status_code == 200:
-            return response.content["score"]
+            return json.loads(response.content)["score"]
         else:
             raise Exception(f"Request failed. Status code: {response.status_code}, content: {response.content}")
 
@@ -31,6 +36,8 @@ if __name__ == '__main__':
     y = model(x)
     print(y.shape)
     
-    torch.onnx.export(model, torch.Tensor(1,3,32,32), OUTPUT_FILE)    
-    model_stealing_submission(OUTPUT_FILE)
+    torch.onnx.export(model, torch.Tensor(1,3,32,32), OUTPUT_FILE) 
+    submit = False
+    if submit:   
+        model_stealing_submission(OUTPUT_FILE)
 
