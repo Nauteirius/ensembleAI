@@ -38,7 +38,11 @@ class ModelApi:
         with torch.no_grad():
             image_features = self.model.encode_image(img)
 
-        image_features_list = image_features.tolist()
+            # Add noise to the image features
+            noise = torch.randn_like(image_features) * 0.01
+            noisy_image_features = image_features + noise
+
+        image_features_list = noisy_image_features.tolist()
 
         return jsonify({'representation': image_features_list})
 
