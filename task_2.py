@@ -13,10 +13,15 @@ SERVER_URL = "http://34.71.138.79:9090"
 TEAM_TOKEN = "zZ9HuhBABqiNLD7i"
 TIMEOUT=1000000
 # IDS_NUM = 2
+# IDS_NUM = 200
+# IDS_OFFSETS = [i for i in range(0, 2000, IDS_NUM)]
 IDS_OFFSET = 0
-IDS_NUM = 1000
+IDS_NUM = 1950
 SOLUTION_IDS_NUM = 20000
 
+BINARY_OR_AFFINE = "binary"
+INPUT_DIM = (3, 32, 32)
+OUTPUT_DIM = 384
 
 def sybil(ids: List[int], home_or_defense: str, binary_or_affine: str):
     if home_or_defense not in ["home", "defense"] or binary_or_affine not in [
@@ -84,16 +89,14 @@ def prepare_data(ids):
     representations = sybil(ids, "home", BINARY_OR_AFFINE)
     return representations
 
-# def reverse_affine(points):
+def reverse_affine(points_a, points_b):
+    matrix = points_a - points_b
+    solution = np.linalg.solve(matrix, np.zeros(shape=(matrix.shape[0],)))
 
-
-BINARY_OR_AFFINE = "affine"
-INPUT_DIM = (3, 32, 32)
-OUTPUT_DIM = 384
 
 if __name__ == "__main__":
 
-    reset = False
+    reset = True
     if reset:
         sybil_reset(BINARY_OR_AFFINE, "home")
         exit(0)
@@ -106,13 +109,13 @@ if __name__ == "__main__":
     if download_data:
         print("requesting representations")
         ys = prepare_data(ids)
-        with open('ys_data.pickle', 'wb') as f:
+        with open(f'ys_data{IDS_OFFSET}.pickle', 'wb') as f:
             pickle.dump(ys, f)
         print(ys)
         print(type(ys))
         exit(0)
     else:
-        with open('ys_data.pickle', 'rb') as f:
+        with open(f'ys_data{IDS_OFFSET}.pickle', 'rb') as f:
             ys = pickle.load(f)
     ys = [torch.tensor(y) for y in ys]
     # print([y.shape for y in ys])
@@ -124,13 +127,14 @@ if __name__ == "__main__":
     loader = torch.utils.data.DataLoader(list(zip(Xs, ys)), batch_size=64, shuffle=True)
 
     model = torch.nn.Sequential(
-        torch.nn.Conv2d(3, 10, 3),
+        torch.nn.Conv2d(3, 6, 3),
+        torch.nn.MaxPool2d(2,2),
         # torch.nn.BatchNorm2d(16),
-        torch.nn.Conv2d(10, 1, 3),
+        torch.nn.Conv2d(6, 1, 3),
         # torch.nn.BatchNorm2d(16),
         torch.nn.Flatten(),
         torch.nn.ReLU(),
-        torch.nn.Linear(784, OUTPUT_DIM)
+        torch.nn.Linear(169, OUTPUT_DIM)
     )
 
     opt = torch.optim.Adam(model.parameters())
@@ -138,12 +142,9 @@ if __name__ == "__main__":
 
     print("start training")
 
-    # for x, y in zip(Xs, ys):
     for x, y in loader:
         opt.zero_grad()
         outputs = model(x)
-        # print(outputs.shape)
-        # print(y.shape)
         loss = loss_fn(outputs, y)
         loss.backward()
         opt.step()
