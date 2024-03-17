@@ -35,9 +35,9 @@ if __name__ == '__main__':
     print(dataset.ids, dataset.imgs, dataset.labels)
 
     generated = {}
-    generated['obrazki']=[]
-    generated['reprezentacje']=[]
-    generated['id']=[]
+    generated['idx']=[]             # indexes of querries
+    generated['img_idx']=[]         # indexes from the dataset
+    generated['representations']=[] # vectors from the querries
 
     for idx, (img_idx, img) in enumerate(zip(dataset.ids, dataset.imgs)):
 
@@ -76,9 +76,9 @@ if __name__ == '__main__':
         encoding = model_stealing(image_path)
         #generated.append((idx, img_idx, encoding))
         
-        generated['obrazki'].append(img_idx)
-        generated['reprezentacje'].append(encoding)
-        generated['id'].append(idx)
+        generated['idx'].append(idx)
+        generated['img_idx'].append(img_idx)
+        generated['representations'].append(encoding)
 
     with open('generated_data', 'wb') as f:
         pickle.dump(generated, f)
